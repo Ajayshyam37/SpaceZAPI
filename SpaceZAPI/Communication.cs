@@ -7,6 +7,9 @@ public class Communication
     public State state { get; set; }
     public CommunicationType commType { get; set; }
     public PayloadType payloadType { get; set; }
+    public State payloadState { get;set;}
+    public double orbitRadius { get; set; }
+    public double totalTimeToOrbit { get; set; }
 }
 
 public class Telemetry

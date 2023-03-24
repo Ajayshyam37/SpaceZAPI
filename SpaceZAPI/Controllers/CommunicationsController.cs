@@ -9,63 +9,80 @@ namespace SpaceZAPI.Controllers;
 [Route("[controller]")]
 public class CommunicationsController : ControllerBase
 {
+    int telemetryCount = 0;
     private readonly List<Communication> _communications = new List<Communication>
     {
       new Communication()
       {
-        spaceCraft_ID = 1, name = "Falcon 9", state = State.Active,
+        spaceCraft_ID = 1, name = "Falcon 9", state = State.Active,payloadState =State.Active,
         commType = CommunicationType.Rocket,
-        payloadType = PayloadType.Communication
+        payloadType = PayloadType.Communication,
+        orbitRadius = 30000,
+        totalTimeToOrbit = (30000 / 3600 + 10)
       },
       new Communication()
       {
-        spaceCraft_ID = 2, name = "Dragon Crew", state = State.Active,
+        spaceCraft_ID = 2, name = "Dragon Crew", state = State.Active,payloadState =State.Waiting,
         commType = CommunicationType.Rocket,
-        payloadType = PayloadType.Scientific
+        payloadType = PayloadType.Scientific,
+        orbitRadius = 400000,
+        totalTimeToOrbit = (400000 / 3600 + 10)
       },
       new Communication()
       {
-        spaceCraft_ID = 3, name = "Starship", state = State.DeOrbited,
+        spaceCraft_ID = 3, name = "Starship", state = State.DeOrbited,payloadState =State.Waiting,
         commType = CommunicationType.Rocket,
-        payloadType = PayloadType.Scientific
+        payloadType = PayloadType.Scientific,
+        orbitRadius = 40000,
+        totalTimeToOrbit = (4000 / 3600 + 10)
       },
       new Communication()
       {
-        spaceCraft_ID = 4, name = "Saturn V", state = State.Waiting,
+        spaceCraft_ID = 4, name = "Saturn V", state = State.Waiting,payloadState =State.Waiting,
         commType = CommunicationType.Rocket,
-        payloadType = PayloadType.Scientific
+        payloadType = PayloadType.Scientific,
+        orbitRadius = 500000,
+        totalTimeToOrbit = (500000 / 3600 + 10)
       },
       new Communication()
       {
-        spaceCraft_ID = 5, name = "Vostok 1", state = State.Waiting,
+        spaceCraft_ID = 5, name = "Vostok 1", state = State.Waiting,payloadState =State.Waiting,
         commType = CommunicationType.Rocket,
-        payloadType = PayloadType.Scientific
+        payloadType = PayloadType.Scientific,
+        orbitRadius = 6000,
+        totalTimeToOrbit = (600000 / 3600 + 10)
       }
 
 };
 
-    private List<Telemetry> GenerateTelemetry()
+    private List<Telemetry> GenerateTelemetry(double orbitRadius, double totalTime,int telemetryCount)
     {
-       
         var random = new Random();
-        var id = Guid.NewGuid();
-        var altitude = $"{random.Next(1, 10000)} km";
-        var longitude = $"{random.Next(180)} {(random.Next(2) == 0 ? "N" : "S")}";
-        var latitude = $"{random.Next(180)} {(random.Next(2) == 0 ? "E" : "W")}";
-        var temperature = $"{random.Next(-100, 100)} C";
-        var timeToOrbit = $"{random.Next(1, 24)} hours";
+        var timeToOrbit = totalTime - (telemetryCount * 5);
+        var altitude = "";
+        if (timeToOrbit <= 0)
+        {
+            altitude = $"{orbitRadius}";
+            timeToOrbit = 0;
+        }
+        else
+        { 
+          altitude = $"{Math.Round(telemetryCount * (orbitRadius / totalTime))} KM";
+        }
         List<Telemetry> temp = new List<Telemetry>() {
         new Telemetry
         {
-            id = id,
-            altitude = altitude,
-            longitude = longitude,
-            latitude = latitude,
-            temperature = temperature,
-            timeToOrbit = timeToOrbit
-        } };
+            id = new Guid(),
+            altitude = altitude.ToString(),
+            longitude = $"{random.Next(180)} {(random.Next(2) == 0 ? "N" : "S")}",
+            latitude = $"{random.Next(180)} {(random.Next(2) == 0 ? "E" : "W")}",
+            temperature = $"{random.Next(-100, 100)} C",
+            timeToOrbit = timeToOrbit.ToString()
+        }
+    };
         return temp;
     }
+
 
     private readonly ILogger<CommunicationsController> _logger;
 
@@ -99,9 +116,11 @@ public class CommunicationsController : ControllerBase
         return communications;
     }
     [HttpGet("GetTelmentry/{spaceCraftId}")]
-    public List<Telemetry> GetTelemetry(int spaceCraftId)
+    public List<Telemetry> GetTelemetry(int spaceCraftId, int count)
     {
-        return GenerateTelemetry();
+        var communication = new Communication();
+        communication = GetBySpaceCraftId(spaceCraftId);
+        return GenerateTelemetry(communication.orbitRadius,communication.totalTimeToOrbit,count);
     }
 
 }

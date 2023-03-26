@@ -6,8 +6,11 @@ public class Communication
     public string name { get; set; }
     public State state { get; set; }
     public CommunicationType commType { get; set; }
+    public State payloadState { get; set; }
+    public Guid payLoad_ID { get; set; }
     public PayloadType payloadType { get; set; }
-    public State payloadState { get;set;}
+    public Boolean telemetry { get; set; }
+    public Boolean payloadData { get; set; }
     public double orbitRadius { get; set; }
     public double totalTimeToOrbit { get; set; }
 }

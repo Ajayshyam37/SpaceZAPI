@@ -11,7 +11,7 @@ public class MissonControlController : ControllerBase
      {
             new SpaceCraft { spaceCraft_ID = 1, name = "Falcon 9", state = State.Active },
             new SpaceCraft { spaceCraft_ID = 2, name = "Dragon Crew", state = State.Active },
-            new SpaceCraft { spaceCraft_ID = 3, name = "Starship", state = State.DeOrbited },
+            new SpaceCraft { spaceCraft_ID = 3, name = "Starship", state = State.Active },
             new SpaceCraft { spaceCraft_ID = 4, name = "Saturn V", state = State.Waiting },
             new SpaceCraft { spaceCraft_ID = 5, name = "Vostok 1", state = State.Waiting }
      };

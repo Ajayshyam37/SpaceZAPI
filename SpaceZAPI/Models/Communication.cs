@@ -1,27 +1,33 @@
-﻿namespace SpaceZAPI;
-
-public class Communication
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+namespace SpaceZAPI.Models
 {
-    public int spaceCraft_ID { get; set; }
-    public string name { get; set; }
-    public State state { get; set; }
-    public CommunicationType commType { get; set; }
-    public State payloadState { get; set; }
-    public Guid payLoad_ID { get; set; }
-    public PayloadType payloadType { get; set; }
-    public Boolean telemetry { get; set; }
-    public Boolean payloadData { get; set; }
-    public double orbitRadius { get; set; }
-    public double totalTimeToOrbit { get; set; }
-}
 
-public class Telemetry
-{
-    public Guid id { get; set; }
-    public string altitude { get; set; }
-    public string longitude { get; set; }
-    public string latitude { get; set; }
-    public string temperature { get; set; }
-    public string timeToOrbit { get; set; }
+    public class Communication
+    {
+        
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public int communication_ID { get; set; }
+
+        [BsonElement("spaceCraft_ID")]
+        public int spaceCraft_ID { get; set; }
+
+        [BsonElement("payloadid")]
+        public Guid payLoad_ID { get; set; }
+
+        [BsonElement("payloadstate")]
+        public State payloadState { get; set; }
+
+        [BsonElement("payloadtype")]
+        public PayloadType payloadType { get; set; }
+
+        [BsonElement("telemetry")]
+        public Boolean telemetry { get; set; }
+
+        [BsonElement("payloaddata")]
+        public Boolean payloadData { get; set; }
+
+    }
 }
 

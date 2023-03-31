@@ -3,14 +3,12 @@ using SpaceZAPI.Models;
 
 namespace SpaceZAPI.Services
 {
-	public interface ISpaceCraftService
+	public interface ITelemetryCommunicationService
 	{
-		List<SpaceCraft> Get();
-		SpaceCraft Get(string id);
-		SpaceCraft Create(SpaceCraft spaceCraft);
-		void Update(string id, SpaceCraft spaceCraft);
-		void UpdateSpaceCraft(string id, SpaceCraft spaceCraft);
-        void Remove(string spaceCraft_ID);
+		List<Telemetry> Get(string id);
+		Telemetry GetTelemetry(string id);
+		Telemetry Create(Telemetry telemetry);
+        void Remove(string id);
     }
 }
 

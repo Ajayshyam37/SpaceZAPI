@@ -3,14 +3,14 @@ using SpaceZAPI.Models;
 
 namespace SpaceZAPI.Services
 {
-	public interface ISpaceCraftService
+	public interface IPayLoadService
 	{
-		List<SpaceCraft> Get();
-		SpaceCraft Get(string id);
-		SpaceCraft Create(SpaceCraft spaceCraft);
-		void UpdateState(string id, SpaceCraft spaceCraft);
-		void UpdateSpaceCraft(string id, SpaceCraft spaceCraft);
-        void Remove(string spaceCraft_ID);
+		List<PayLoad> Get();
+        PayLoad Get(string id);
+        PayLoad Create(PayLoad payLoad);
+		void UpdateState(string id, PayLoad payLoad);
+        void UpdatePayLoad(string id, PayLoad payLoad);
+        void Remove(string payloadid);
     }
 }
 

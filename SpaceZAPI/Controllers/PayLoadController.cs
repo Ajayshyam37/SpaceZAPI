@@ -10,97 +10,164 @@ namespace SpaceZAPI.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class SpaceCraftsController : ControllerBase
+public class PayLoadController : ControllerBase
 {
-    private readonly ISpaceCraftService spaceCraftService;
+    private readonly IPayLoadService payLoadService;
 
-    public SpaceCraftsController(ISpaceCraftService spaceCraftService)
+    public PayLoadController(IPayLoadService payLoadService)
     {
-        this.spaceCraftService = spaceCraftService;
+        this.payLoadService = payLoadService;
     }
+    /// <summary>
+    /// Retrieves a list of PayLoads.
+    /// </summary>
+    /// <returns></returns>
 
     [HttpGet]
-    public ActionResult<List<SpaceCraft>> Get()
+    public ActionResult<List<PayLoad>> Get()
     {
-        return spaceCraftService.Get();
+        return payLoadService.Get();
     }
 
-    [HttpGet("{id}")]
-    public ActionResult<SpaceCraft> Get(string id)
+    /// <summary>
+    /// Retrieves a list of PayLoad based on the Id
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [HttpGet]
+    [Route("GetPayLoadById")]
+    public ActionResult<PayLoad> Get([FromQuery] string id)
     {
-        var spacecraft = spaceCraftService.Get(id);
+        var payLoad = payLoadService.Get(id);
 
-        if (spacecraft == null)
+        if (payLoad == null)
         {
-            return NotFound($"SpaceCraft {id} not found");
+            return NotFound($"PayLoad {id} not found");
         }
-        return spacecraft;
+        return payLoad;
     }
+
+    /// <summary>
+    /// Creates a new PayLoad with its name, type and id.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="name"></param>
+    /// <param name="payloadType"></param>
+    /// <returns></returns>
 
     [HttpPost]
-    [Route("NewSpaceCraft")]
-    public ActionResult<SpaceCraft> NewSpaceCraft(string name)
+    [Route("NewPayLoad")]
+    public ActionResult<PayLoad> NewPayLoad(string id, string name, PayloadType payloadType)
     {
         if (string.IsNullOrEmpty(name))
         {
             return BadRequest("Spacecraft name cannot be empty");
         }
 
-        var newSpaceCraft = new SpaceCraft
+        var newPayLoad = new PayLoad
         {
-            spaceCraft_ID = ObjectId.GenerateNewId().ToString(),
-            name = name,
-            state = State.Waiting,
-            spaceCraftTelemetery = false,
-            payloadname = String.Empty,
-            payloadid = ObjectId.GenerateNewId().ToString(),
-            orbitRadius = 0,
-            totalTimeToOrbit = 0
+            payloadid = id,
+            payloadname = name,
+            payloadstate = State.Waiting,
+            payLoadType = payloadType,
+            payLoadData = false,
         };
 
-        spaceCraftService.Create(newSpaceCraft);
+        payLoadService.Create(newPayLoad);
 
-        return CreatedAtAction(nameof(Get), new { id = newSpaceCraft.spaceCraft_ID }, newSpaceCraft);
+        return CreatedAtAction(nameof(Get), new { id = newPayLoad.payloadid }, newPayLoad);
     }
 
-    [HttpPut]
-    [Route("DeOrbit")]
-    public ActionResult DeOrbit(string id)
-    {
-        var oldSpaceCraft = spaceCraftService.Get(id);
-        if (oldSpaceCraft == null)
-        {
-            return NotFound($"SpaceCraft not found");
-        }
-        oldSpaceCraft.state = State.DeOrbited;
-        spaceCraftService.Update(id, oldSpaceCraft);
-        return NoContent();
-    }
+    /// <summary>
+    /// Updates the PayLoad
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="name"></param>
+    /// <returns></returns>
 
     [HttpPut]
-    public ActionResult Put(string id,string name)
+    public ActionResult Put(string id, string name)
     {
-        var oldSpaceCraft = spaceCraftService.Get(id);
-        if (oldSpaceCraft == null)
+        var oldPayLoad = payLoadService.Get(id);
+        if (oldPayLoad == null)
         {
-            return NotFound($"SpaceCraft not found");
+            return NotFound($"PayLoad not found");
         }
-        oldSpaceCraft.payloadname = name;
-        spaceCraftService.UpdateSpaceCraft(id, oldSpaceCraft);
+        oldPayLoad.payloadname = name;
+        payLoadService.UpdatePayLoad(id, oldPayLoad);
         return NoContent();
     }
 
     [HttpDelete("{id}")]
     public ActionResult Delete(string id)
     {
-        var oldSpaceCraft = spaceCraftService.Get(id);
-        if (oldSpaceCraft == null)
+        var oldPayLoad = payLoadService.Get(id);
+        if (oldPayLoad == null)
         {
-            return NotFound($"SpaceCraft {id} not found");
+            return NotFound($"PayLoad {id} not found");
         }
-        spaceCraftService.Remove(oldSpaceCraft.spaceCraft_ID);
+        payLoadService.Remove(oldPayLoad.payloadid);
 
-        return Ok($"SpaceCraft {oldSpaceCraft.name} deleted");
+        return Ok($"PayLoad {oldPayLoad.payloadname} deleted");
     }
+    /// <summary>
+    /// Updates the PayLoad PayLoadData parameter
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+
+    [HttpPut]
+    [Route("UpdatePayLoadData")]
+    public ActionResult UpdatePayLoadData(string id, bool data)
+    {
+        var oldPayLoad = payLoadService.Get(id);
+        if (oldPayLoad == null)
+        {
+            return NotFound($"PayLoad not found");
+        }
+        oldPayLoad.payLoadData = data;
+        payLoadService.UpdatePayLoad(id, oldPayLoad);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Updates the state of a PayLoad to DeOrbited
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [HttpPut]
+    [Route("DeOrbitPayLoad")]
+    public ActionResult DeOrbitPayLoad([FromQuery]string id)
+    {
+        var oldPayLoad = payLoadService.Get(id);
+        if (oldPayLoad == null)
+        {
+            return NotFound($"PayLoad not found");
+        }
+        oldPayLoad.payloadstate = State.DeOrbited;
+        payLoadService.UpdatePayLoad(id, oldPayLoad);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Updates a PayLoad from Waiting state to Active
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [HttpPut]
+    [Route("LaunchPayLoad")]
+    public ActionResult LaunchPayLoad([FromQuery] string id)
+    {
+        var oldPayLoad = payLoadService.Get(id);
+        if (oldPayLoad == null)
+        {
+            return NotFound($"PayLoad not found");
+        }
+        oldPayLoad.payloadstate = State.Active;
+        payLoadService.UpdatePayLoad(id, oldPayLoad);
+        return NoContent();
+    }
+
 
 }

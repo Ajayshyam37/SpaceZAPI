@@ -4,166 +4,104 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Net;
 using Newtonsoft.Json;
+using SpaceZAPI.Models;
+using SpaceZAPI.Services;
+using SpaceZAPI.Helper;
+using MongoDB.Bson;
 
 namespace SpaceZAPI.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class CommunicationsController : ControllerBase
 {
-    private readonly List<Communication> _communications = new List<Communication>
-    {
-      new Communication()
-      {
-        spaceCraft_ID = 1, name = "Falcon 9",
-        state = State.Active,
-        commType = CommunicationType.Rocket,
-        payLoad_ID = Guid.NewGuid(),
-        payloadState =State.Waiting,
-        payloadType = PayloadType.Communication,
-        telemetry = false,
-        payloadData = false,
-        orbitRadius = 30000,
-        totalTimeToOrbit = (30000 / 3600 + 10)
-      },
-      new Communication()
-      {
-        spaceCraft_ID = 2,
-        name = "Dragon Crew",
-        state = State.Active,
-        commType = CommunicationType.Rocket,
-        payLoad_ID = Guid.NewGuid(),
-        payloadState =State.Active,
-        payloadType = PayloadType.Spy,
-        telemetry = false,
-        payloadData = false,
-        orbitRadius = 400000,
-        totalTimeToOrbit = (400000 / 3600 + 10)
-      },
-      new Communication()
-      {
-        spaceCraft_ID = 3, name = "Starship",
-        state = State.Active,
-        commType = CommunicationType.Rocket,
-        payLoad_ID = Guid.NewGuid(),
-        payloadState =State.Waiting,
-        payloadType = PayloadType.Scientific,
-        telemetry = false,
-        payloadData = false,
-        orbitRadius = 40000,
-        totalTimeToOrbit = (4000 / 3600 + 10)
-      },
-      new Communication()
-      {
-        spaceCraft_ID = 4,
-        name = "Saturn V",
-        state = State.Waiting,
-        commType = CommunicationType.Rocket,
-        payLoad_ID = Guid.NewGuid(),
-        payloadState =State.Waiting,
-        payloadType = PayloadType.Scientific,
-        telemetry = false,
-        payloadData = false,
-        orbitRadius = 500000,
-        totalTimeToOrbit = (500000 / 3600 + 10)
-      },
-      new Communication()
-      {
-        name = "Vostok 1",
-        state = State.Waiting,
-        commType = CommunicationType.Rocket,
-        payloadState =State.Waiting,
-        payLoad_ID = Guid.NewGuid(),
-        payloadType = PayloadType.Communication,
-        telemetry = false,
-        payloadData = false,
-        orbitRadius = 6000,
-        totalTimeToOrbit = (600000 / 3600 + 10)
-      }
 
-};
+    private readonly ISpaceCraftService spaceCraftService;
+    private readonly IPayLoadService payLoadService;
+    private readonly ITelemetryCommunicationService telemetryCommunicationService;
 
-    private List<Telemetry> GenerateTelemetry(double orbitRadius, double totalTime, int telemetryCount)
+
+    public CommunicationsController(ISpaceCraftService spaceCraftService, IPayLoadService payLoadService, ITelemetryCommunicationService telemetryCommunicationService)
     {
+        this.spaceCraftService = spaceCraftService;
+        this.payLoadService = payLoadService;
+        this.telemetryCommunicationService = telemetryCommunicationService;
+    }
+    /// <summary>
+    /// Generates Random Telemetry information and accurate time to orbit in secs
+    /// </summary>
+    /// <param name="orbitRadius"></param>
+    /// <param name="totalTime"></param>
+    /// <param name="launchtime"></param>
+    /// <param name="spaceCraft_ID"></param>
+    /// <returns></returns>
+    private List<Telemetry> GenerateTelemetry(double orbitRadius, double totalTime, DateTime launchtime, string spaceCraft_ID)
+    {
+        Calculate cal = new Calculate();
+        var timeToOrbit = cal.CalculateTimeToOrbit(orbitRadius, launchtime);
         var random = new Random();
-        var timeToOrbit = totalTime - (telemetryCount * 5);
         var altitude = "";
-        var id = Guid.NewGuid();
         if (timeToOrbit <= 0)
         {
-            altitude = $"{orbitRadius}";
+            altitude = $"{orbitRadius} KM";
             timeToOrbit = 0;
         }
         else
         {
-            altitude = $"{Math.Round(telemetryCount * (orbitRadius / totalTime))} KM";
+            altitude = $"{Math.Round(orbitRadius / timeToOrbit)} KM";
         }
         List<Telemetry> temp = new List<Telemetry>() {
         new Telemetry
         {
-            id = id,
+            id = ObjectId.GenerateNewId().ToString(),
             altitude = altitude.ToString(),
             longitude = $"{random.Next(180)} {(random.Next(2) == 0 ? "N" : "S")}",
             latitude = $"{random.Next(180)} {(random.Next(2) == 0 ? "E" : "W")}",
             temperature = $"{random.Next(-100, 100)} C",
-            timeToOrbit = timeToOrbit.ToString()
+            timeToOrbit = timeToOrbit,
+
+            sourceid = spaceCraft_ID,
+            sourcetype = SourceType.LaunchVehicle,
+            createdat = DateTime.UtcNow
         }
-    };
+        };
+
+        if (temp != null)
+        {
+            var telemetry = telemetryCommunicationService.Create(temp[0]);
+        }
+
         return temp;
-    }
-
-
-    private readonly ILogger<CommunicationsController> _logger;
-
-    public CommunicationsController(ILogger<CommunicationsController> logger)
-    {
-        _logger = logger;
-    }
-
-    [HttpGet]
-    [Route("GetCommunications")]
-    public IEnumerable<object> Get()
-    {
-        var communications = new List<object>();
-        foreach (var communication in _communications)
-        {
-            communications.Add(new { communication.spaceCraft_ID, communication.name, communication.state, communication.commType, communication.payloadType });
-        }
-        return communications;
-    }
-    [HttpGet]
-    [Route("GetBySpaceCraftId")]
-    public Communication GetBySpaceCraftId([FromQuery] int id)
-    {
-        var communications = new Communication();
-        foreach (var communication in _communications)
-        {
-            if (communication.spaceCraft_ID == id)
-            {
-                communications = communication;
-                break;
-            }
-        }
-        return communications;
     }
 
     [HttpGet]
     [Route("GetTelemetry")]
-    public List<Telemetry> GetTelemetry([FromQuery] int id, [FromQuery] int count)
+    public List<Telemetry> GetTelemetry([FromQuery] string id)
     {
-        var communication = new Communication();
-        communication = GetBySpaceCraftId(id);
-        return GenerateTelemetry(communication.orbitRadius, communication.totalTimeToOrbit, count);
+        var spaceCraft = spaceCraftService.Get(id);
+
+        if (spaceCraft == null)
+        {
+            return new List<Telemetry>();
+        }
+
+        return GenerateTelemetry(spaceCraft.orbitRadius, spaceCraft.totalTimeToOrbit, spaceCraft.launchtime, spaceCraft.spaceCraft_ID);
     }
+    /// <summary>
+    /// Generates random payload data based on the payload type
+    /// </summary>
+    /// <param name="payloadtype"></param>
+    /// <param name="payloadid"></param>
+    /// <returns></returns>
     [HttpGet]
     [Route("GetPayLoadData")]
-    public IActionResult GetPayLoadData([FromQuery] int payloadtype)
+    public IActionResult GetPayLoadData([FromQuery] int payloadtype, string payloadid)
     {
         dynamic payloadData = null;
 
         switch (payloadtype)
         {
-           
+
             case 0: // Communication payload
                 payloadData = new
                 {
@@ -185,7 +123,7 @@ public class CommunicationsController : ControllerBase
                 {
                     ScientificData = new
                     {
-          
+
                         Weather = new { Rain = new Random().Next(100), Humidity = new Random().Next(100), Snow = new Random().Next(100) }
                     }
                 };
@@ -194,8 +132,29 @@ public class CommunicationsController : ControllerBase
                 return NotFound();
         }
 
+
+
         string payloadJson = JsonConvert.SerializeObject(payloadData);
         return Ok(payloadJson);
+    }
+    /// <summary>
+    /// Retreives the telemetry information for the spacecraft
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [HttpGet]
+    [Route("GetTelemetryById")]
+    public List<Telemetry> GetTelemetryById([FromQuery] string id)
+    {
+        var spacecraft = spaceCraftService.Get(id);
+        if(spacecraft == null)
+        {
+            return new List<Telemetry>();
+        }
+
+        var telemetry = telemetryCommunicationService.Get(id);
+
+        return telemetry;
     }
 }
 

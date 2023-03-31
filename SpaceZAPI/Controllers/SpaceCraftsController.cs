@@ -1,47 +1,158 @@
 ﻿using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 using MongoDB.Driver;
+using SpaceZAPI.Helper;
 using SpaceZAPI.Models;
+using SpaceZAPI.Services;
 
 namespace SpaceZAPI.Controllers;
 
+[Route("api/[controller]")]
 [ApiController]
-public class MissonControlController : ControllerBase
+public class SpaceCraftsController : ControllerBase
 {
-    private readonly IMongoCollection<SpaceCraft> _spaceCrafts;
+    private readonly ISpaceCraftService spaceCraftService;
 
-    public MissonControlController(IMongoClient mongoClient)
+    public SpaceCraftsController(ISpaceCraftService spaceCraftService)
     {
-        var database = mongoClient.GetDatabase("yourDatabaseName");
-        _spaceCrafts = database.GetCollection<SpaceCraft>("SpaceCrafts");
+        this.spaceCraftService = spaceCraftService;
+    }
+    /// <summary>
+    /// Retrieves a list of space crafts.
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet]
+    public ActionResult<List<SpaceCraft>> Get()
+    {
+        return spaceCraftService.Get();
     }
 
-    private readonly ILogger<MissonControlController> _logger;
-
-    public MissonControlController(ILogger<MissonControlController> logger)
-    {
-        _logger = logger;
-    }
+    /// <summary>
+    /// Retrieves a single SpaceCraft object by its unique identifier (id) from the server using the SpaceCraftService.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
 
     [HttpGet]
-    [Route("GetSpaceCrafts")]
-    public IEnumerable<object> Get()
+    [Route("GetSpaceCraftById")]
+    public ActionResult<SpaceCraft> GetSpaceCraftById([FromQuery] string id)
     {
-        var spaceCrafts = new List<object>();
-        foreach (var spaceCraft in _spaceCrafts.FindSync<SpaceCraft>(Builders<SpaceCraft>.Filter.Empty).ToList())
+        var spacecraft = spaceCraftService.Get(id);
+
+        if (spacecraft == null)
         {
-            spaceCrafts.Add(new { spaceCraft.spaceCraft_ID, spaceCraft.name, spaceCraft.state });
+            return NotFound($"SpaceCraft {id} not found");
         }
-        return spaceCrafts;
+        return spacecraft;
     }
 
-    [HttpGet]
+    /// <summary>
+    /// Creates a new SpaceCraft object with various properties such as name and state.
+    /// </summary>
+    /// <returns></returns>
+    [HttpPost]
     [Route("NewSpaceCraft")]
-    public IActionResult GenerateGuid([FromQuery] string name)
+    public ActionResult<SpaceCraft> NewSpaceCraft()
     {
-        // Generate a new GUID based on the name parameter
-        Guid guid = Guid.NewGuid();
+        long spacecraftscount = spaceCraftService.GetCount();
+        var newSpaceCraft = new SpaceCraft
+        {
+            spaceCraft_ID = ObjectId.GenerateNewId().ToString(),
+            name = "LV " + (spacecraftscount + 1),
+            state = State.Waiting,
+            spaceCraftTelemetery = false,
+            payloadname = String.Empty,
+            payloadid = ObjectId.GenerateNewId().ToString(),
+            orbitRadius = 0,
+            totalTimeToOrbit = 0,
+            createdtime = DateTime.UtcNow
 
-        return Ok(guid);
+        };
+
+        spaceCraftService.Create(newSpaceCraft);
+
+        return CreatedAtAction(nameof(Get), new { id = newSpaceCraft.spaceCraft_ID }, newSpaceCraft);
     }
+
+    /// <summary>
+    /// Updates the state of a SpaceCraft to DeOrbited by its ID.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+
+    [HttpPut]
+    [Route("DeOrbit")]
+    public ActionResult DeOrbit(string id)
+    {
+        var oldSpaceCraft = spaceCraftService.Get(id);
+        if (oldSpaceCraft == null)
+        {
+            return NotFound($"SpaceCraft not found");
+        }
+        oldSpaceCraft.state = State.DeOrbited;
+        spaceCraftService.Update(id, oldSpaceCraft, false);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Updates an exisiting SpaceCraft
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="name"></param>
+    /// <returns></returns>
+
+    [HttpPut]
+    public ActionResult Put(string id, string name)
+    {
+        var oldSpaceCraft = spaceCraftService.Get(id);
+        if (oldSpaceCraft == null)
+        {
+            return NotFound($"SpaceCraft not found");
+        }
+        oldSpaceCraft.payloadname = name;
+        spaceCraftService.UpdateSpaceCraft(id, oldSpaceCraft);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Deletes a SpaceCraft
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+
+    [HttpDelete("{id}")]
+    public ActionResult Delete(string id)
+    {
+        var oldSpaceCraft = spaceCraftService.Get(id);
+        if (oldSpaceCraft == null)
+        {
+            return NotFound($"SpaceCraft {id} not found");
+        }
+        spaceCraftService.Remove(id.Trim());
+
+        return Ok($"SpaceCraft {oldSpaceCraft.name} deleted");
+    }
+
+    /// <summary>
+    /// Updates the telemetry state of a space craft identified by an id parameter.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="state"></param>
+    /// <returns></returns>
+
+    [HttpPut]
+    [Route("SpaceCraftTelemetry")]
+    public SpaceCraft SpaceCraftTelemetry([FromQuery] string id, [FromQuery] bool state)
+    {
+        var oldSpaceCraft = spaceCraftService.Get(id);
+        if (oldSpaceCraft == null)
+        {
+            return new SpaceCraft();
+        }
+        spaceCraftService.Update(id, oldSpaceCraft, state);
+        oldSpaceCraft = spaceCraftService.Get(id);
+        return oldSpaceCraft;
+    }
+
 }

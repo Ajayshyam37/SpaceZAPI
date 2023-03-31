@@ -4,65 +4,53 @@ using MongoDB.Driver;
 
 namespace SpaceZAPI.Services
 {
-    public class SpaceCraftService : ISpaceCraftService
+    public class PayLoadService : IPayLoadService
     {
-        private readonly IMongoCollection<SpaceCraft> _spacecrafts;
+        private readonly IMongoCollection<PayLoad> _payload;
 
-        public SpaceCraftService(ISpaceCraftDatabaseSettings settings, IMongoClient mongoClient)
+        public PayLoadService(ISpaceZDatabaseSettings settings, IMongoClient mongoClient)
         {
             var database = mongoClient.GetDatabase(settings.DatabaseName);
-            _spacecrafts = database.GetCollection<SpaceCraft>(settings.SpaceCraftsCollectionName);
+            _payload = database.GetCollection<PayLoad>(settings.PayLoadCollectionName);
         }
-        public SpaceCraft Create(SpaceCraft spaceCraft)
+        public PayLoad Create(PayLoad payload)
         {
-            _spacecrafts.InsertOne(spaceCraft);
-            return spaceCraft;
+            _payload.InsertOne(payload);
+            return payload;
         }
 
-        public List<SpaceCraft> Get()
+        public List<PayLoad> Get()
         {
-            return _spacecrafts.Find(spacecraft => true).ToList();
+            return _payload.Find(payload => true).ToList();
         }
 
-        public SpaceCraft Get(string id)
+        public PayLoad Get(string id)
         {
-            return _spacecrafts.Find(spacecraft => true).FirstOrDefault();
+            return _payload.Find(payload => payload.payloadid == id).FirstOrDefault<PayLoad>();
         }
 
-        public void UpdateState(string id, SpaceCraft spaceCraft)
+        public void UpdateState(string id, PayLoad payLoad)
         {
-            var updateDefinition = Builders<SpaceCraft>.Update
-                .Set(s => s.state, spaceCraft.state)
-                .Set(s => s.spaceCraftTelemetery, spaceCraft.spaceCraftTelemetery)
-                .Set(s => s.totalTimeToOrbit, spaceCraft.totalTimeToOrbit);
-            _spacecrafts.UpdateOne(s => s.spaceCraft_ID == id, updateDefinition);
+            var updateDefinition = Builders<PayLoad>.Update
+                .Set(s => s.payloadstate, payLoad.payloadstate)
+                .Set(s => s.payLoadData, payLoad.payLoadData);
+            _payload.UpdateOne(s => s.payloadid == id, updateDefinition);
         }
 
-        public void UpdateSpaceCraft(string id, SpaceCraft spaceCraft)
+        public void UpdatePayLoad(string id, PayLoad payLoad)
         {
-            var updateDefinition = Builders<SpaceCraft>.Update
-                .Set(s => s.state, spaceCraft.state)
-                .Set(s => s.name, spaceCraft.name)
-                .Set(s => s.spaceCraftTelemetery, spaceCraft.spaceCraftTelemetery)
-                .Set(s => s.orbitRadius, spaceCraft.orbitRadius)
-                .Set(s => s.payloadid, spaceCraft.payloadid)
-                .Set(s => s.payloadname, spaceCraft.payloadname)
-                .Set(s => s.totalTimeToOrbit, spaceCraft.totalTimeToOrbit);
-            _spacecrafts.UpdateOne(s => s.spaceCraft_ID == id, updateDefinition);
+            var updateDefinition = Builders<PayLoad>.Update
+                 .Set(s => s.payloadname, payLoad.payloadname)
+                 .Set(s => s.payLoadType, payLoad.payLoadType)
+                .Set(s => s.payloadstate, payLoad.payloadstate)
+                .Set(s => s.payLoadData, payLoad.payLoadData);
+               
+            _payload.UpdateOne(s => s.payloadid == id, updateDefinition);
         }
-
-        public void UpdateTimeToOrbit(string id, SpaceCraft spaceCraft)
-        {
-            var updateDefinition = Builders<SpaceCraft>.Update
-                .Set(s => s.totalTimeToOrbit, spaceCraft.totalTimeToOrbit);
-
-            _spacecrafts.UpdateOne(s => s.spaceCraft_ID == id, updateDefinition);
-        }
-
 
         public void Remove(string id)
         {
-            _spacecrafts.DeleteOne(SpaceCraft => SpaceCraft.spaceCraft_ID == id);
+            _payload.DeleteOne(payLoad => payLoad.payloadid == id);
         }
     }
 }
